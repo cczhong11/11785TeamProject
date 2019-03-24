@@ -1,23 +1,14 @@
 from __future__ import division
 
-from models import *
-from utils.utils import *
-from utils.datasets import *
-
-import os
-import sys
-import time
-import datetime
 import argparse
+import datetime
 
-import torch
-from torch.utils.data import DataLoader
-from torchvision import datasets
-from torch.autograd import Variable
-
-import matplotlib.pyplot as plt
-import matplotlib.patches as patches
 from matplotlib.ticker import NullLocator
+from torch.utils.data import DataLoader
+
+from models import *
+from utils.datasets import *
+from utils.utils import *
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--image_folder', type=str, default='data/samples', help='path to dataset')
@@ -44,19 +35,17 @@ model.load_weights(opt.weights_path)
 if cuda:
     model.cuda()
 
-model.eval() # Set in evaluation mode
+model.eval()  # Set in evaluation mode
 
-dataloader = DataLoader(ImageFolder(opt.image_folder, img_size=opt.img_size),
-                        batch_size=opt.batch_size, shuffle=False, num_workers=opt.n_cpu)
 
-classes = load_classes(opt.class_path) # Extracts class labels from file
+classes = load_classes(opt.class_path)  # Extracts class labels from file
 
 Tensor = torch.cuda.FloatTensor if cuda else torch.FloatTensor
 
-imgs = []           # Stores image paths
-img_detections = [] # Stores detections for each image index
+imgs = []  # Stores image paths
+img_detections = []  # Stores detections for each image index
 
-print ('\nPerforming object detection:')
+print('\nPerforming object detection:')
 prev_time = time.time()
 for batch_i, (img_paths, input_imgs) in enumerate(dataloader):
     # Configure input
@@ -67,12 +56,11 @@ for batch_i, (img_paths, input_imgs) in enumerate(dataloader):
         detections = model(input_imgs)
         detections = non_max_suppression(detections, 80, opt.conf_thres, opt.nms_thres)
 
-
     # Log progress
     current_time = time.time()
     inference_time = datetime.timedelta(seconds=current_time - prev_time)
     prev_time = current_time
-    print ('\t+ Batch %d, Inference Time: %s' % (batch_i, inference_time))  # TODO
+    print('\t+ Batch %d, Inference Time: %s' % (batch_i, inference_time))  # TODO
 
     # Save image and detections
     imgs.extend(img_paths)
@@ -82,11 +70,11 @@ for batch_i, (img_paths, input_imgs) in enumerate(dataloader):
 cmap = plt.get_cmap('tab20b')
 colors = [cmap(i) for i in np.linspace(0, 1, 20)]
 
-print ('\nSaving images:')
+print('\nSaving images:')
 # Iterate through images and save plot of detections
 for img_i, (path, detections) in enumerate(zip(imgs, img_detections)):
 
-    print ("(%d) Image: '%s'" % (img_i, path))  # TODO
+    print("(%d) Image: '%s'" % (img_i, path))  # TODO
 
     # Create plot
     img = np.array(Image.open(path))
@@ -100,17 +88,16 @@ for img_i, (path, detections) in enumerate(zip(imgs, img_detections)):
     # Image height and width after padding is removed
     unpad_h = opt.img_size - pad_y
     unpad_w = opt.img_size - pad_x
-    
+
     # Draw bounding boxes and labels of detections
     if detections is not None:
         unique_labels = detections[:, -1].cpu().unique()
         n_cls_preds = len(unique_labels)
         bbox_colors = random.sample(colors, n_cls_preds)
-        object_box = open("output/{}.txt".format(img_i),'w') 
+        object_box = open("output/{}.txt".format(img_i), 'w')
         for x1, y1, x2, y2, conf, cls_conf, cls_pred in detections:
-            
-            print ('\t+ Label: %s, Conf: %.5f' % (classes[int(cls_pred)], cls_conf.item())) # TODO
-            object_box.write("{0}:{1},{2},{3},{4};".format(classes[int(cls_pred)],x1,y1,x2,y2))
+            print('\t+ Label: %s, Conf: %.5f' % (classes[int(cls_pred)], cls_conf.item()))  # TODO
+            object_box.write("{0}:{1},{2},{3},{4};".format(classes[int(cls_pred)], x1, y1, x2, y2))
             # Rescale coordinates to original dimensions
             box_h = ((y2 - y1) / unpad_h) * img.shape[0]
             box_w = ((x2 - x1) / unpad_w) * img.shape[1]
@@ -120,17 +107,17 @@ for img_i, (path, detections) in enumerate(zip(imgs, img_detections)):
             color = bbox_colors[int(np.where(unique_labels == int(cls_pred))[0])]
             # Create a Rectangle patch
             bbox = patches.Rectangle((x1, y1), box_w, box_h, linewidth=2,
-                                    edgecolor=color,
-                                    facecolor='none')
+                                     edgecolor=color,
+                                     facecolor='none')
             # Add the bbox to the plot
             ax.add_patch(bbox)
             # Add label
             plt.text(x1, y1, s=classes[int(cls_pred)], color='white', verticalalignment='top',
-                    bbox={'color': color, 'pad': 0})
+                     bbox={'color': color, 'pad': 0})
         object_box.close()
     # Save generated image with detections
     plt.axis('off')
     plt.gca().xaxis.set_major_locator(NullLocator())
     plt.gca().yaxis.set_major_locator(NullLocator())
-    plt.savefig('output/%d.png' % (img_i), bbox_inches='tight', pad_inches=0.0)
+    plt.savefig('output/%d.png' % img_i, bbox_inches='tight', pad_inches=0.0)
     plt.close()
