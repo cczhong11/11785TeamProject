@@ -72,7 +72,7 @@ for batch_i, (img_paths, input_imgs) in enumerate(dataloader):
     current_time = time.time()
     inference_time = datetime.timedelta(seconds=current_time - prev_time)
     prev_time = current_time
-    print ('\t+ Batch %d, Inference Time: %s' % (batch_i, inference_time))
+    print ('\t+ Batch %d, Inference Time: %s' % (batch_i, inference_time))  # TODO
 
     # Save image and detections
     imgs.extend(img_paths)
@@ -86,7 +86,7 @@ print ('\nSaving images:')
 # Iterate through images and save plot of detections
 for img_i, (path, detections) in enumerate(zip(imgs, img_detections)):
 
-    print ("(%d) Image: '%s'" % (img_i, path))
+    print ("(%d) Image: '%s'" % (img_i, path))  # TODO
 
     # Create plot
     img = np.array(Image.open(path))
@@ -109,7 +109,7 @@ for img_i, (path, detections) in enumerate(zip(imgs, img_detections)):
         object_box = open("output/{}.txt".format(img_i),'w') 
         for x1, y1, x2, y2, conf, cls_conf, cls_pred in detections:
             
-            print ('\t+ Label: %s, Conf: %.5f' % (classes[int(cls_pred)], cls_conf.item()))
+            print ('\t+ Label: %s, Conf: %.5f' % (classes[int(cls_pred)], cls_conf.item())) # TODO
             object_box.write("{0}:{1},{2},{3},{4};".format(classes[int(cls_pred)],x1,y1,x2,y2))
             # Rescale coordinates to original dimensions
             box_h = ((y2 - y1) / unpad_h) * img.shape[0]
