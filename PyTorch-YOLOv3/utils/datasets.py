@@ -11,7 +11,7 @@ import torchvision.transforms as transforms
 
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
-
+from utils import *
 from skimage.transform import resize
 
 import sys
@@ -41,6 +41,22 @@ class ImageFolder(Dataset):
         input_img = torch.from_numpy(input_img).float()
 
         return img_path, input_img
+
+    def __len__(self):
+        return len(self.files)
+
+class croppedImageFolder(Dataset):
+    def __init__(self, folder_path, img_size=416):
+        self.files = sorted(glob.glob('%s/*.*' % folder_path))
+        self.img_shape = (img_size, img_size)
+
+    def __getitem__(self, index):
+        img_path = self.files[index % len(self.files)]
+        # Extract image
+        img = np.array(Image.open(img_path))
+        
+
+        return img_path, img
 
     def __len__(self):
         return len(self.files)

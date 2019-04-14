@@ -14,6 +14,16 @@ from collections import defaultdict
 
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
+class Upsample(nn.Module):
+    # Custom Upsample layer (nn.Upsample gives deprecated warning message)
+
+    def __init__(self, scale_factor=1, mode='nearest'):
+        super(Upsample, self).__init__()
+        self.scale_factor = scale_factor
+        self.mode = mode
+
+    def forward(self, x):
+        return F.interpolate(x, scale_factor=self.scale_factor, mode=self.mode)
 
 
 def create_modules(module_defs):
@@ -61,7 +71,7 @@ def create_modules(module_defs):
             modules.add_module("maxpool_%d" % i, maxpool)
 
         elif module_def["type"] == "upsample":
-            upsample = nn.Upsample(scale_factor=int(module_def["stride"]), mode="nearest")
+            upsample = Upsample(scale_factor=int(module_def["stride"]), mode="nearest")
             modules.add_module("upsample_%d" % i, upsample)
 
         elif module_def["type"] == "route":
@@ -249,6 +259,7 @@ class Darknet(nn.Module):
                 x = module(x)
             elif module_def["type"] == "route":
                 layer_i = [int(x) for x in module_def["layers"].split(",")]
+                
                 x = torch.cat([layer_outputs[i] for i in layer_i], 1)
             elif module_def["type"] == "shortcut":
                 layer_i = int(module_def["from"])

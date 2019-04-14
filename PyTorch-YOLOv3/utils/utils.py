@@ -6,7 +6,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 import numpy as np
-
+from PIL import Image
+from skimage.transform import resize
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
@@ -256,3 +257,98 @@ def build_targets(
 def to_categorical(y, num_classes):
     """ 1-hot encodes a tensor """
     return torch.from_numpy(np.eye(num_classes, dtype="uint8")[y])
+
+def cropped_image(image, detection,img_path):
+    
+    return image
+
+def pad_image(img, img_size):
+    img_shape = (img_size, img_size)
+    h, w, _ = img.shape
+    dim_diff = np.abs(h - w)
+    # Upper (left) and lower (right) padding
+    pad1, pad2 = dim_diff // 2, dim_diff - dim_diff // 2
+    # Determine padding
+    pad = ((pad1, pad2), (0, 0), (0, 0)) if h <= w else ((0, 0), (pad1, pad2), (0, 0))
+    # Add padding
+    input_img = np.pad(img, pad, 'constant', constant_values=127.5) / 255.
+    # Resize and normalize
+    input_img = resize(input_img, (*img_shape, 3), mode='reflect')
+    # Channels-first
+    input_img = np.transpose(input_img, (2, 0, 1))
+    # As pytorch tensor
+    input_img = torch.from_numpy(input_img).float()
+    return input_img
+
+def transform_to_origin(detections,h,w,img_size,crop_info=None):
+    # h w is input size , 
+    # The amount of padding that was added
+    
+    pad_x = max(h-w, 0) * (img_size / max([h,w]))
+    pad_y = max(w-h, 0) * (img_size / max([h,w]))
+    # Image height and width after padding is removed
+    unpad_h = img_size - pad_y
+    unpad_w = img_size - pad_x
+    detections = detections[0]
+    if len(detections) == 0:
+        return [detections]
+    for i in range(len(detections)):
+        x1 = detections[i][0]
+        y1 = detections[i][1]
+        x2 = detections[i][2]
+        y2 = detections[i][3]
+
+        box_h = ((y2 - y1) / unpad_h) * h
+        box_w = ((x2 - x1) / unpad_w) * w
+        y1 = ((y1 - pad_y // 2) / unpad_h) * h
+        x1 = ((x1 - pad_x // 2) / unpad_w) * w
+        x2 = x1 + box_w
+        y2 = y1 + box_h
+
+        detections[i][0] = x1
+        detections[i][1] = y1 
+        detections[i][2] = x2
+        detections[i][3] = y2
+        # only used to transform from crop info
+        if crop_info!=None:
+            detections[i][0] += crop_info[0]
+            detections[i][1] += crop_info[1]
+            detections[i][2] += crop_info[0]
+            detections[i][3] += crop_info[1]
+        print(detections[i])
+    return [detections]
+idx = 0
+def crop_image(image_path, detection):
+    global idx
+    img = Image.open(image_path[0])
+    # get cord (x1,y1,x2,y2)
+    # assume only one item in detection
+    w,h = img.size
+    r_x1 = w
+    r_x2 = 0
+    r_y1 = h
+    r_y2 = 0
+    if len(detection[0])==0:
+        return 
+    print(detection[0])
+    for x1,y1,x2,y2,_,_,_ in detection[0]:
+        r_x1 = min(x1,r_x1)
+        r_y1 = min(y1,r_y1)
+        r_x2 = max(x2,r_x2)
+        r_y2 = max(y2,r_y2)
+    r_x1 = max(0,r_x1-50)
+    r_y1 = max(0,r_y1-50)
+    r_x2 = min(w,r_x2+50)
+    r_y2 = min(h,r_y2+50)
+    cord = (int(r_x1),int(r_y1),int(r_x2),int(r_y2))
+    print(cord)
+    img = img.crop(cord)
+    img.save("a{}.jpg".format(idx))
+    idx+=1
+    img = np.array(img)
+    
+    h = r_y2 - r_y1
+    w = r_x2 - r_x1
+    
+    return img,cord,h,w
+    
