@@ -45,6 +45,7 @@ class ImageFolder(Dataset):
     def __len__(self):
         return len(self.files)
 
+
 class croppedImageFolder(Dataset):
     def __init__(self, folder_path, img_size=416):
         self.files = sorted(glob.glob('%s/*.*' % folder_path))
