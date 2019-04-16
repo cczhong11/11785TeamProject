@@ -111,6 +111,7 @@ def pipeline(opt, model, cuda):
                         detections = transform_to_origin(detections, h, w, opt.img_size)
                     else:
                         # not key frame, use LK instead.
+                        detections = []
                         for detection in last_detections:
                             p = lucaskanade.LucasKanade(last_image, image, detection)
                             detections.append([detection[0] + p[0], detection[1] + p[1], detection[2] + p[0], detection[3] + p[1]])
