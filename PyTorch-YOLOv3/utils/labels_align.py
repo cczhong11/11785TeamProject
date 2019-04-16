@@ -27,7 +27,7 @@ if __name__ == '__main__':
                 simi = model.similarity(vid_word, coco_name)
                 vid_names_dict[vid_word].append([coco_name, simi])
             except:
-                print(vid_word, coco_name)
+                vid_names_dict[vid_word].append([coco_name, 0])
         vid_names_dict[vid_word].sort(key=lambda x: x[1], reverse=True)
     vid_names_dict = OrderedDict(vid_names_dict)
     with open("sim_result.txt", "w") as f:
