@@ -43,7 +43,7 @@ if cuda:
     min_model.cuda()
 
 model.eval()  # Set in evaluation mode
-
+min_model.eval()
 rootDir = opt.root_dir
 for dirName, subdirList, fileList in os.walk(rootDir):
     if not subdirList:
@@ -76,11 +76,12 @@ for dirName, subdirList, fileList in os.walk(rootDir):
             last_detection = None
             for batch_i, (img_paths, input_imgs) in enumerate(dataloader):
                 # Configure input
-                h = input_imgs.shape[1]
-                w = input_imgs.shape[2]
-                input_imgs = pad_image(input_imgs[0],opt.img_size)
-                input_imgs = torch.unsqueeze(input_imgs,0)
+                
                 if batch_i %10 == 0 or len(last_detection[0])==0:
+                    h = input_imgs.shape[1]
+                    w = input_imgs.shape[2]
+                    input_imgs = pad_image(input_imgs[0],opt.img_size)
+                    input_imgs = torch.unsqueeze(input_imgs,0)
                     input_imgs = Variable(input_imgs.type(Tensor))
 
                     # Get detections

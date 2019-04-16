@@ -132,7 +132,7 @@ def non_max_suppression(prediction, num_classes, conf_thres=0.5, nms_thres=0.4):
     Returns detections with shape:
         (x1, y1, x2, y2, object_conf, class_score, class_pred)
     """
-
+    
     # From (center x, center y, width, height) to (x1, y1, x2, y2)
     box_corner = prediction.new(prediction.shape)
     box_corner[:, :, 0] = prediction[:, :, 0] - prediction[:, :, 2] / 2
@@ -140,7 +140,7 @@ def non_max_suppression(prediction, num_classes, conf_thres=0.5, nms_thres=0.4):
     box_corner[:, :, 2] = prediction[:, :, 0] + prediction[:, :, 2] / 2
     box_corner[:, :, 3] = prediction[:, :, 1] + prediction[:, :, 3] / 2
     prediction[:, :, :4] = box_corner[:, :, :4]
-
+    
     output = [None for _ in range(len(prediction))]
     for image_i, image_pred in enumerate(prediction):
         # Filter out confidence scores below threshold
@@ -152,6 +152,7 @@ def non_max_suppression(prediction, num_classes, conf_thres=0.5, nms_thres=0.4):
         # Get score and class with highest confidence
         class_conf, class_pred = torch.max(image_pred[:, 5 : 5 + num_classes], 1, keepdim=True)
         # Detections ordered as (x1, y1, x2, y2, obj_conf, class_conf, class_pred)
+        
         detections = torch.cat((image_pred[:, :5], class_conf.float(), class_pred.float()), 1)
         # Iterate through all predicted classes
         unique_labels = detections[:, -1].cpu().unique()
@@ -258,13 +259,12 @@ def to_categorical(y, num_classes):
     """ 1-hot encodes a tensor """
     return torch.from_numpy(np.eye(num_classes, dtype="uint8")[y])
 
-def cropped_image(image, detection,img_path):
-    
-    return image
+
 
 def pad_image(img, img_size):
     img_shape = (img_size, img_size)
     h, w, _ = img.shape
+    
     dim_diff = np.abs(h - w)
     # Upper (left) and lower (right) padding
     pad1, pad2 = dim_diff // 2, dim_diff - dim_diff // 2
@@ -274,6 +274,7 @@ def pad_image(img, img_size):
     input_img = np.pad(img, pad, 'constant', constant_values=127.5) / 255.
     # Resize and normalize
     input_img = resize(input_img, (*img_shape, 3), mode='reflect')
+    
     # Channels-first
     input_img = np.transpose(input_img, (2, 0, 1))
     # As pytorch tensor
@@ -290,47 +291,48 @@ def transform_to_origin(detections,h,w,img_size,crop_info=None):
     unpad_h = img_size - pad_y
     unpad_w = img_size - pad_x
     detections = detections[0]
+    
     if len(detections) == 0:
         return [detections]
     for i in range(len(detections)):
         x1 = detections[i][0]
         y1 = detections[i][1]
         x2 = detections[i][2]
-        y2 = detections[i][3]
-
+        y2 = detections[i][3]   
         box_h = ((y2 - y1) / unpad_h) * h
         box_w = ((x2 - x1) / unpad_w) * w
         y1 = ((y1 - pad_y // 2) / unpad_h) * h
         x1 = ((x1 - pad_x // 2) / unpad_w) * w
         x2 = x1 + box_w
         y2 = y1 + box_h
-
+        
         detections[i][0] = x1
         detections[i][1] = y1 
         detections[i][2] = x2
         detections[i][3] = y2
-        # only used to transform from crop info
+        
         if crop_info!=None:
             detections[i][0] += crop_info[0]
             detections[i][1] += crop_info[1]
             detections[i][2] += crop_info[0]
-            detections[i][3] += crop_info[1]
-        print(detections[i])
+            detections[i][3] += crop_info[1]            
+            
     return [detections]
-idx = 0
+
 def crop_image(image_path, detection):
-    global idx
+    
     img = Image.open(image_path[0])
     # get cord (x1,y1,x2,y2)
     # assume only one item in detection
     w,h = img.size
+    
     r_x1 = w
     r_x2 = 0
     r_y1 = h
     r_y2 = 0
     if len(detection[0])==0:
         return 
-    print(detection[0])
+    
     for x1,y1,x2,y2,_,_,_ in detection[0]:
         r_x1 = min(x1,r_x1)
         r_y1 = min(y1,r_y1)
@@ -343,12 +345,12 @@ def crop_image(image_path, detection):
     cord = (int(r_x1),int(r_y1),int(r_x2),int(r_y2))
     print(cord)
     img = img.crop(cord)
-    img.save("a{}.jpg".format(idx))
+    
     idx+=1
     img = np.array(img)
     
-    h = r_y2 - r_y1
-    w = r_x2 - r_x1
+    h = int(r_y2) - int(r_y1)
+    w = int(r_x2) - int(r_x1)
     
-    return img,cord,h,w
+    return img,cord,int(h),int(w)
     
