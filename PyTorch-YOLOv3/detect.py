@@ -9,7 +9,7 @@ from torch.utils.data import DataLoader
 from models import *
 from utils.datasets import *
 from utils.utils import *
-
+from utils.iou import *
 import os
 
 parser = argparse.ArgumentParser()
@@ -65,7 +65,7 @@ for dirName, subdirList, fileList in os.walk(rootDir):
 
         imgs = []  # Stores image paths
         img_detections = []  # Stores detections for each image index
-
+        acc = 0
         print('\nPerforming object detection:')
         prev_time = time.time()
         total_time = datetime.timedelta(seconds=0)
@@ -122,17 +122,18 @@ for dirName, subdirList, fileList in os.walk(rootDir):
                 n_cls_preds = len(unique_labels)
                 bbox_colors = random.sample(colors, n_cls_preds)
                 object_box = open((dir_output + "/{}.txt").format(img_i), 'w')
+                rs = []
                 for x1, y1, x2, y2, conf, cls_conf, cls_pred in detections:
                     # print('\t+ Label: %s, Conf: %.5f' % (classes[int(cls_pred)], cls_conf.item()))
-                    rs = []
+                    
                     object_box.write("{0}:{1},{2},{3},{4};".format(classes[int(cls_pred)], x1, y1, x2, y2))
-                    rs.append([classes[int(cls_pred)], x2, x1, y2, y1])
+                    
                     # Rescale coordinates to original dimensions
                     box_h = ((y2 - y1) / unpad_h) * img.shape[0]
                     box_w = ((x2 - x1) / unpad_w) * img.shape[1]
                     y1 = ((y1 - pad_y // 2) / unpad_h) * img.shape[0]
                     x1 = ((x1 - pad_x // 2) / unpad_w) * img.shape[1]
-
+                    rs.append([classes[int(cls_pred)], x1+box_w, x1, y1+box_h, y1])
                     color = bbox_colors[int(np.where(unique_labels == int(cls_pred))[0])]
                     # Create a Rectangle patch
                     bbox = patches.Rectangle((x1, y1), box_w, box_h, linewidth=2,
@@ -146,11 +147,12 @@ for dirName, subdirList, fileList in os.walk(rootDir):
                 object_box.close()
             xmlpath = path.replace("Data","Annotations")[:-5]+".xml"
             
-            acc = iou.frame_iou(xmlpath,rs)
-            print(acc)
+            acc += iou.frame_iou(xmlpath,rs)
+            
             # Save generated image with detections
             plt.axis('off')
             plt.gca().xaxis.set_major_locator(NullLocator())
             plt.gca().yaxis.set_major_locator(NullLocator())
             plt.savefig(dir_output + '/%d.png' % img_i, bbox_inches='tight', pad_inches=0.0)
             plt.close('all')
+        print(acc/len(dataloader))
