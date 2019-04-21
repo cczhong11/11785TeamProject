@@ -97,7 +97,7 @@ class IOU:
             cur_res = self.bbox_iou(o1[1:], o2[1:])
             sim_weight = self.sim_dict[o1[0]][o2[0]]
             iou_res.append(cur_res * sim_weight)
-            print(cur_res, sim_weight)
+            #print(cur_res, sim_weight)
         return sum(iou_res) / len(iou_res)
 
 

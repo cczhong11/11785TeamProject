@@ -141,7 +141,7 @@ for dirName, subdirList, fileList in os.walk(rootDir):
                     # print('\t+ Label: %s, Conf: %.5f' % (classes[int(cls_pred)], cls_conf.item()))
                     rs = []
                     object_box.write("{0}:{1},{2},{3},{4};".format(classes[int(cls_pred)], x1, y1, x2, y2))
-                    rs.append([classes[int(cls_pred)], x1, y1, x2, y2])
+                    rs.append([classes[int(cls_pred)], x2, x1, y2, y1])
                     # Rescale coordinates to original dimensions
                     box_h = y2 - y1
                     box_w = x2 - x1
@@ -158,7 +158,8 @@ for dirName, subdirList, fileList in os.walk(rootDir):
                 object_box.close()
             xmlpath = path.replace("Data","Annotations")[:-5]+".xml"
             
-            iou.frame_iou(xmlpath,rs)
+            acc = iou.frame_iou(xmlpath,rs)
+            print(acc)
             # Save generated image with detections
             plt.axis('off')
             plt.gca().xaxis.set_major_locator(NullLocator())

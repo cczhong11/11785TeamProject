@@ -28,7 +28,9 @@ opt = parser.parse_args()
 print(opt)
 
 cuda = torch.cuda.is_available() and opt.use_cuda
-
+SIM_PATH = "utils/sim_result_aligned.txt"
+MAP_VID = "utils/map_vid.txt"
+iou = IOU(SIM_PATH, MAP_VID, k=2)
 os.makedirs('output', exist_ok=True)
 
 # Set up model
@@ -122,7 +124,9 @@ for dirName, subdirList, fileList in os.walk(rootDir):
                 object_box = open((dir_output + "/{}.txt").format(img_i), 'w')
                 for x1, y1, x2, y2, conf, cls_conf, cls_pred in detections:
                     # print('\t+ Label: %s, Conf: %.5f' % (classes[int(cls_pred)], cls_conf.item()))
+                    rs = []
                     object_box.write("{0}:{1},{2},{3},{4};".format(classes[int(cls_pred)], x1, y1, x2, y2))
+                    rs.append([classes[int(cls_pred)], x2, x1, y2, y1])
                     # Rescale coordinates to original dimensions
                     box_h = ((y2 - y1) / unpad_h) * img.shape[0]
                     box_w = ((x2 - x1) / unpad_w) * img.shape[1]
@@ -140,6 +144,10 @@ for dirName, subdirList, fileList in os.walk(rootDir):
                     plt.text(x1, y1, s=classes[int(cls_pred)], color='white', verticalalignment='top',
                              bbox={'color': color, 'pad': 0})
                 object_box.close()
+            xmlpath = path.replace("Data","Annotations")[:-5]+".xml"
+            
+            acc = iou.frame_iou(xmlpath,rs)
+            print(acc)
             # Save generated image with detections
             plt.axis('off')
             plt.gca().xaxis.set_major_locator(NullLocator())
