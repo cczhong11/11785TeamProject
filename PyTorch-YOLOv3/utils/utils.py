@@ -343,10 +343,9 @@ def crop_image(image_path, detection):
     r_x2 = min(w,r_x2+50)
     r_y2 = min(h,r_y2+50)
     cord = (int(r_x1),int(r_y1),int(r_x2),int(r_y2))
-    print(cord)
-    img = img.crop(cord)
     
-    idx+=1
+    img = img.crop(cord)
+ 
     img = np.array(img)
     
     h = int(r_y2) - int(r_y1)

@@ -9,7 +9,7 @@ from torch.utils.data import DataLoader
 from models import *
 from utils.datasets import *
 from utils.utils import *
-
+from utils.iou import *
 import os
 
 parser = argparse.ArgumentParser()
@@ -31,7 +31,8 @@ print(opt)
 cuda = torch.cuda.is_available() and opt.use_cuda
 
 os.makedirs('output', exist_ok=True)
-
+SIM_PATH = "utils/sim_result_aligned.txt"
+MAP_VID = "utils/map_vid.txt"
 # Set up model
 model = Darknet(opt.config_path, img_size=opt.img_size)
 min_model = Darknet(opt.config_path, img_size=320)
@@ -41,7 +42,7 @@ min_model.load_weights(opt.weights_path)
 if cuda:
     model.cuda()
     min_model.cuda()
-
+iou = IOU(SIM_PATH, MAP_VID, k=2)
 model.eval()  # Set in evaluation mode
 min_model.eval()
 rootDir = opt.root_dir
@@ -138,6 +139,7 @@ for dirName, subdirList, fileList in os.walk(rootDir):
                 object_box = open((dir_output + "/{}.txt").format(img_i), 'w')
                 for x1, y1, x2, y2, conf, cls_conf, cls_pred in detections:
                     # print('\t+ Label: %s, Conf: %.5f' % (classes[int(cls_pred)], cls_conf.item()))
+                    print(path)
                     object_box.write("{0}:{1},{2},{3},{4};".format(classes[int(cls_pred)], x1, y1, x2, y2))
                     # Rescale coordinates to original dimensions
                     box_h = y2 - y1
