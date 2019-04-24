@@ -160,11 +160,7 @@ for dirName, subdirList, fileList in os.walk(rootDir):
                 object_box.close()
             xmlpath = path.replace("Data","Annotations")[:-5]+".xml"
             
-<<<<<<< HEAD
             acc+=iou.frame_iou(xmlpath,rs)
-=======
-            acc += iou.frame_iou(xmlpath,rs)
->>>>>>> 76061a0b8808c3c2b85ff5da29494f9ca01c2bbd
             
             # Save generated image with detections
             plt.axis('off')
@@ -172,8 +168,4 @@ for dirName, subdirList, fileList in os.walk(rootDir):
             plt.gca().yaxis.set_major_locator(NullLocator())
             plt.savefig(dir_output + '/%d.png' % img_i, bbox_inches='tight', pad_inches=0.0)
             plt.close('all')
-<<<<<<< HEAD
         print(acc/len(dataloader))
-=======
-        print(acc/len(dataloader))
->>>>>>> 76061a0b8808c3c2b85ff5da29494f9ca01c2bbd
