@@ -121,6 +121,7 @@ for dirName, subdirList, fileList in os.walk(rootDir):
 
         print('\nSaving images:')
         # Iterate through images and save plot of detections
+        acc = 0
         for img_i, (path, detections) in enumerate(zip(imgs, img_detections)):
 
             print("(%d) Image: '%s'" % (img_i, path))
