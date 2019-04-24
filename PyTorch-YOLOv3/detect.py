@@ -65,7 +65,7 @@ for dirName, subdirList, fileList in os.walk(rootDir):
 
         imgs = []  # Stores image paths
         img_detections = []  # Stores detections for each image index
-
+        acc = 0
         print('\nPerforming object detection:')
         prev_time = time.time()
         total_time = datetime.timedelta(seconds=0)
