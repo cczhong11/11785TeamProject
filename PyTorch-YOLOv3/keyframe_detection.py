@@ -10,6 +10,16 @@ import argparse
 import torch
 import time
 import datetime
+from MobileNetV2 import MobileNetV2
+
+
+class Identity(nn.Module):
+    def __init__(self):
+        super(Identity, self).__init__()
+
+    def forward(self, x):
+        return x
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -26,10 +36,17 @@ if __name__ == '__main__':
     parser.add_argument('--root_dir', type=str, default='../../videos', help='root of the video directory')
     opt = parser.parse_args()
     print(opt)
+    cuda = torch.cuda.is_available() and opt.use_cuda
+
+    mnv2 = MobileNetV2(n_class=1000)
+    state_dict = torch.load('mobilenet_v2.pth.tar')  # add map_location='cpu' if no gpu
+    mnv2.load_state_dict(state_dict)
+    mnv2.classifier = Identity()
+    if cuda:
+        mnv2.cuda()
 
     model = models.vgg16(pretrained=True)
     model.classifier = nn.Sequential(*[model.classifier[i] for i in range(4)])
-    cuda = torch.cuda.is_available() and opt.use_cuda
     if cuda:
         model.cuda()
 
@@ -44,7 +61,7 @@ if __name__ == '__main__':
     total_time = datetime.timedelta(seconds=0)
     for batch_i, (img_paths, input_imgs) in enumerate(dataloader):
         input_imgs = Variable(input_imgs.type(Tensor))
-        cur_feature = model(input_imgs)
+        cur_feature = mnv2(input_imgs)
         current_time = time.time()
         inference_time = datetime.timedelta(seconds=current_time - prev_time)
         total_time += inference_time
@@ -55,9 +72,9 @@ if __name__ == '__main__':
             print("keyframe", batch_i)
             continue
         diff = cos(prev_feature, cur_feature)
+        print(batch_i, diff)
         if diff < 0.7:
             print("keyframe", batch_i)
             print(batch_i, diff)
             prev_feature = cur_feature
     print("Average time: " + str(total_time / len(dataloader)))
-   
