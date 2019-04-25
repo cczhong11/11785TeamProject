@@ -10,7 +10,7 @@ import argparse
 import torch
 import time
 import datetime
-from MobileNetV2 import MobileNetV2
+from MobileNetV2 import MobileNetV2  # ref: https://github.com/tonylins/pytorch-mobilenet-v2
 
 
 class Identity(nn.Module):
