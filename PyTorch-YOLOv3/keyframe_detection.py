@@ -45,10 +45,10 @@ if __name__ == '__main__':
     if cuda:
         mnv2.cuda()
 
-    model = models.vgg16(pretrained=True)
-    model.classifier = nn.Sequential(*[model.classifier[i] for i in range(4)])
+    vgg16 = models.vgg16(pretrained=True)
+    vgg16.classifier = nn.Sequential(*[vgg16.classifier[i] for i in range(4)])
     if cuda:
-        model.cuda()
+        vgg16.cuda()
 
     dirName = "/home/andrewdeeplearningisawesome/ILSVRC2015/Data/VID/train/ILSVRC2015_VID_train_0000/ILSVRC2015_train_00098000"
     dataloader = DataLoader(ImageFolder(dirName, img_size=opt.img_size),
@@ -61,7 +61,8 @@ if __name__ == '__main__':
     total_time = datetime.timedelta(seconds=0)
     for batch_i, (img_paths, input_imgs) in enumerate(dataloader):
         input_imgs = Variable(input_imgs.type(Tensor))
-        cur_feature = mnv2(input_imgs)
+        # cur_feature = mnv2(input_imgs)
+        cur_feature = vgg16(input_imgs)
         current_time = time.time()
         inference_time = datetime.timedelta(seconds=current_time - prev_time)
         total_time += inference_time
