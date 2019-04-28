@@ -100,7 +100,7 @@ def pipeline(opt, model, cuda):
                     image = copy.deepcopy(input_imgs)
                     input_imgs = pad_image(input_imgs[0], opt.img_size) # batch_size == 1
                     input_imgs = torch.unsqueeze(input_imgs, 0)
-                    if batch_i % KEY_FRAME_FREQ == 0 or len(last_detection[0]) == 0:
+                    if batch_i % KEY_FRAME_FREQ == 0 or len(last_detections[0]) == 0:
                         # key frame freq = 10
                         input_imgs = Variable(input_imgs.type(Tensor))
 
@@ -109,14 +109,22 @@ def pipeline(opt, model, cuda):
                             detections = model(input_imgs)
                             detections = non_max_suppression(detections, 80, opt.conf_thres, opt.nms_thres)
                         detections = transform_to_origin(detections, h, w, opt.img_size)
+                        print(len(detections), detections[0].shape)
                     else:
                         # not key frame, use LK instead.
                         detections = []
                         for detection in last_detections:
+                            if len(detection.shape) == 1:
+                                detection = torch.unsqueeze(detection, 0)
                             p = lucaskanade.LucasKanade(last_image, image, detection)
-                            detections.append([detection[0] + p[0], detection[1] + p[1], detection[2] + p[0], detection[3] + p[1]])
-
-                    last_detection = detections
+                            for i, d in enumerate(detection):
+                                d[0] += p[i, 0]
+                                d[1] += p[i, 1]
+                                d[2] += p[i, 0]
+                                d[1] += p[i, 1]
+                                detections.append(torch.unsqueeze(d, 0))
+                    print(detections[0].shape)
+                    last_detections = detections
                     last_image = image
 
                     # Log progress
@@ -130,6 +138,8 @@ def pipeline(opt, model, cuda):
                     # Save image and detections
                     imgs.extend(img_paths)
                     img_detections.extend(detections)
+                    if batch_i == 10:
+                        break
                 f.write("Total time: " + str(total_time) + '\n')
                 f.write("Average time: " + str(total_time / len(dataloader)))
 
@@ -178,3 +188,10 @@ def pipeline(opt, model, cuda):
                 plt.gca().yaxis.set_major_locator(NullLocator())
                 plt.savefig(dir_output + '/%d.png' % img_i, bbox_inches='tight', pad_inches=0.0)
                 plt.close('all')
+
+
+if __name__ == '__main__':
+    print("!")
+    opt, model, cuda = init()
+    pipeline(opt, model, cuda)
+    print("!!")

@@ -120,6 +120,7 @@ for dirName, subdirList, fileList in os.walk(rootDir):
         colors = [cmap(i) for i in np.linspace(0, 1, 20)]
 
         print('\nSaving images:')
+        acc = 0
         # Iterate through images and save plot of detections
         acc = 0
         for img_i, (path, detections) in enumerate(zip(imgs, img_detections)):
@@ -159,7 +160,7 @@ for dirName, subdirList, fileList in os.walk(rootDir):
                 object_box.close()
             xmlpath = path.replace("Data","Annotations")[:-5]+".xml"
             
-            acc += iou.frame_iou(xmlpath,rs)
+            acc+=iou.frame_iou(xmlpath,rs)
             
             # Save generated image with detections
             plt.axis('off')
@@ -168,4 +169,3 @@ for dirName, subdirList, fileList in os.walk(rootDir):
             plt.savefig(dir_output + '/%d.png' % img_i, bbox_inches='tight', pad_inches=0.0)
             plt.close('all')
         print(acc/len(dataloader))
-
