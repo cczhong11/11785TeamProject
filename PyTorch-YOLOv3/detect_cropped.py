@@ -168,3 +168,4 @@ for dirName, subdirList, fileList in os.walk(rootDir):
             plt.savefig(dir_output + '/%d.png' % img_i, bbox_inches='tight', pad_inches=0.0)
             plt.close('all')
         print(acc/len(dataloader))
+
