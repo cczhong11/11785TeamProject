@@ -1,1 +1,1 @@
-python3 detect.py --weights_path=/Users/tczhong/Box\ Sync/draft/yolov3.weights --root_dir=/Users/tczhong/image/ --output_dir=/tmp/ --mode=net
+python3 detect.py --root_dir=../../image/Data/VID/train/ILSVRC2015_VID_train_0000/ILSVRC2015_train_00010006 --mode=origin

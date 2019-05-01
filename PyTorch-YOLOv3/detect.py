@@ -69,7 +69,7 @@ def init_model():
         rs.append(min_model)
         if opt.mode == "net":
             mnv2 = MobileNetV2(n_class=1000)
-            state_dict = torch.load('/Users/tczhong/mobilenet_v2.pth.tar',map_location='cpu')  # add map_location='cpu' if no gpu
+            state_dict = torch.load('../../mobilenet_v2.pth.tar',map_location='cpu')  # add map_location='cpu' if no gpu
             mnv2.load_state_dict(state_dict)
             mnv2.classifier = Identity()
             if cuda:
@@ -126,11 +126,11 @@ def plot_image(img_i, path,opt, detections,colors,dir_output,classes):
             plt.text(x1, y1, s=classes[int(cls_pred)], color='white', verticalalignment='top',
                                  bbox={'color': color, 'pad': 0})
         object_box.close()
-        plt.axis('off')
-        plt.gca().xaxis.set_major_locator(NullLocator())
-        plt.gca().yaxis.set_major_locator(NullLocator())
-        plt.savefig(dir_output + '/%d.png' % img_i, bbox_inches='tight', pad_inches=0.0)
-        plt.close('all')
+    plt.axis('off')
+    plt.gca().xaxis.set_major_locator(NullLocator())
+    plt.gca().yaxis.set_major_locator(NullLocator())
+    plt.savefig(dir_output + '/%d.png' % img_i, bbox_inches='tight', pad_inches=0.0)
+    plt.close('all')
     return rs
 
 
@@ -390,7 +390,7 @@ def run_model(opt,model):
 
                 # Save generated image with detections
             with open(dir_output + "/acc.txt", "w") as f:    
-                f.write(acc/len(dataloader))
+                f.write("{}".format(acc/len(dataloader)))
 
 if __name__ == "__main__":
     models, opt = init_model()
