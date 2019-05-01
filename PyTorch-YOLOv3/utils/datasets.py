@@ -57,7 +57,7 @@ class croppedImageFolder(Dataset):
         img = np.array(Image.open(img_path))
         
 
-        return img_path, img
+        return img_path, img.astype("float")
 
     def __len__(self):
         return len(self.files)

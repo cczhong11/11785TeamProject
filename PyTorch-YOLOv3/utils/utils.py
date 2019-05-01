@@ -292,7 +292,7 @@ def transform_to_origin(detections,h,w,img_size,crop_info=None):
     unpad_w = img_size - pad_x
     detections = detections[0]
     
-    if len(detections) == 0:
+    if detections is None or len(detections) == 0:
         return [detections]
     for i in range(len(detections)):
         x1 = detections[i][0]

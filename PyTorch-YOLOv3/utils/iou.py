@@ -98,6 +98,8 @@ class IOU:
             sim_weight = self.sim_dict[o1[0]][o2[0]]
             iou_res.append(cur_res * sim_weight)
             #print(cur_res, sim_weight)
+        if len(iou_res)==0:
+            return 0
         return sum(iou_res) / len(iou_res)
 
 

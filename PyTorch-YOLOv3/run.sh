@@ -1,0 +1,1 @@
+python3 detect.py --weights_path=/Users/tczhong/Box\ Sync/draft/yolov3.weights --root_dir=/Users/tczhong/image/ --output_dir=/tmp/ --mode=net

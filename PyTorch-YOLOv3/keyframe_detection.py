@@ -39,18 +39,18 @@ if __name__ == '__main__':
     cuda = torch.cuda.is_available() and opt.use_cuda
 
     mnv2 = MobileNetV2(n_class=1000)
-    state_dict = torch.load('mobilenet_v2.pth.tar')  # add map_location='cpu' if no gpu
+    state_dict = torch.load('/Users/tczhong/mobilenet_v2.pth.tar',map_location='cpu')  # add map_location='cpu' if no gpu
     mnv2.load_state_dict(state_dict)
     mnv2.classifier = Identity()
     if cuda:
         mnv2.cuda()
 
-    vgg16 = models.vgg16(pretrained=True)
-    vgg16.classifier = nn.Sequential(*[vgg16.classifier[i] for i in range(4)])
-    if cuda:
-        vgg16.cuda()
+    #vgg16 = models.vgg16(pretrained=True)
+    #vgg16.classifier = nn.Sequential(*[vgg16.classifier[i] for i in range(4)])
+    #if cuda:
+    #    vgg16.cuda()
 
-    dirName = "/home/andrewdeeplearningisawesome/ILSVRC2015/Data/VID/train/ILSVRC2015_VID_train_0000/ILSVRC2015_train_00098000"
+    dirName = "/Users/tczhong/image/"
     dataloader = DataLoader(ImageFolder(dirName, img_size=opt.img_size),
                             batch_size=opt.batch_size, shuffle=False, num_workers=opt.n_cpu)
 
@@ -61,8 +61,9 @@ if __name__ == '__main__':
     total_time = datetime.timedelta(seconds=0)
     for batch_i, (img_paths, input_imgs) in enumerate(dataloader):
         input_imgs = Variable(input_imgs.type(Tensor))
-        # cur_feature = mnv2(input_imgs)
-        cur_feature = vgg16(input_imgs)
+        print(input_imgs.size())
+        cur_feature = mnv2(input_imgs)
+        #cur_feature = vgg16(input_imgs)
         current_time = time.time()
         inference_time = datetime.timedelta(seconds=current_time - prev_time)
         total_time += inference_time
