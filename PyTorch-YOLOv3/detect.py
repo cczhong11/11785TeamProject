@@ -389,8 +389,8 @@ def run_model(opt,model):
                 acc += iou.frame_iou(xmlpath,rs)
 
                 # Save generated image with detections
-                
-            print(acc/len(dataloader))
+            with open(dir_output + "/acc.txt", "w") as f:    
+                f.write(acc/len(dataloader))
 
 if __name__ == "__main__":
     models, opt = init_model()
