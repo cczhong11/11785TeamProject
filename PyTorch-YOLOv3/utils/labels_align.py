@@ -8,7 +8,7 @@ GOOGLE_PRETRAINED_PATH = '/Users/zhangdu/OneDrive/Study/Graduate_Study/CMU/Class
 
 if __name__ == '__main__':
     vid_words = []
-    with open("../resources/map_vid.txt", 'r') as f:
+    with open("map_vid.txt", 'r') as f:
         lines = f.readlines()
         for line in lines:
             vid_words.append(line.split()[-1])
@@ -16,7 +16,7 @@ if __name__ == '__main__':
     with open("../data/coco.names", "r") as f:
         lines = f.readlines()
         for line in lines:
-            coco_names.append(line.split()[0])
+            coco_names.append(line.strip().replace(' ', '_'))
     vid_names_dict = defaultdict(lambda: [])
     # Load Google's pre-trained Word2Vec model.
     model = gensim.models.KeyedVectors.load_word2vec_format(GOOGLE_PRETRAINED_PATH, binary=True)

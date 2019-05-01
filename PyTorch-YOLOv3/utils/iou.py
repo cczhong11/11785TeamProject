@@ -79,8 +79,8 @@ class IOU:
         if abs(len(xml_boxes) - len(detect_res)) >= self.k:
             return 0.0
         # guarantee xml_boxes has less or equal number of objects than detect_res
-        if len(xml_boxes) > len(detect_res):
-            xml_boxes, detect_res = detect_res, xml_boxes
+        # if len(xml_boxes) > len(detect_res):
+        #     xml_boxes, detect_res = detect_res, xml_boxes
         filter_detect_res = []  # find the objects pair with highest iou
         for o1 in xml_boxes:
             max_iou_res = float('-inf')
@@ -95,10 +95,10 @@ class IOU:
         iou_res = []
         for o1, o2 in zip(xml_boxes, filter_detect_res):
             cur_res = self.bbox_iou(o1[1:], o2[1:])
+            o2[0] = o2[0].replace(' ', '_')
             sim_weight = self.sim_dict[o1[0]][o2[0]]
             iou_res.append(cur_res * sim_weight)
-            #print(cur_res, sim_weight)
-        if len(iou_res)==0:
+        if len(iou_res) == 0:
             return 0
         return sum(iou_res) / len(iou_res)
 
