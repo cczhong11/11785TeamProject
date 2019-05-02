@@ -22,8 +22,8 @@ def LucasKanade(It, It1, rect):
 
     It = It.squeeze(0)
     It1 = It1.squeeze(0)
-    It = It[..., :3] @ torch.Tensor([0.299, 0.587, 0.114])
-    It1 = It1[..., :3] @ torch.Tensor([0.299, 0.587, 0.114])
+    It = It[..., :3] @ torch.Tensor([0.299, 0.587, 0.114]).double()
+    It1 = It1[..., :3] @ torch.Tensor([0.299, 0.587, 0.114]).double()
 
     It = It.cpu().numpy()
     It1 = It1.cpu().numpy()

@@ -25,22 +25,17 @@ def sobel(x, direction='x'):
 
 
 def get_grid(x0, x1, y0, y1, X, Y, imh, imw):
-    # print(x0.item(), x1.item(), y0.item(), y1.item(), X, Y)
     tx = torch.linspace(x0, x1, X)
     ty = torch.linspace(y0, y1, Y)
     grid_xy = torch.stack(torch.meshgrid(tx, ty), dim=2).unsqueeze(0)
-    # print(grid_xy)
     grid_xy[:, :, :, 0] = (grid_xy[:, :, :, 0] - imh / 2) / (imh / 2)
     grid_xy[:, :, :, 1] = (grid_xy[:, :, :, 1] - imw / 2) / (imw / 2)
-    # print(grid_xy)
-
     return grid_xy
 
 
 def LucasKanadeGPU(It, It1, rect):
     threshold = 0.001
     iter = 3
-    # print(It.shape, It1.shape)
     p = torch.zeros(2)
     rectX = int(rect[3] - rect[1])
     rectY = int(rect[2] - rect[0])
@@ -58,7 +53,7 @@ def LucasKanadeGPU(It, It1, rect):
     img1_width = img1_tensor.size(3)
 
     grid_xy0 = get_grid(rect[0], rect[2], rect[1], rect[3], rectY, rectX, img_width, img_height)
-
+    m_WIt = F.grid_sample(img_tensor, grid=grid_xy0).permute(0, 1, 3, 2)
     for i in range(iter):
 
         grid_xy = get_grid(rect[0] + p[0], rect[2] + p[0], rect[1] + p[1], rect[3] + p[1], rectY, rectX, img1_width, img1_height)
@@ -70,7 +65,6 @@ def LucasKanadeGPU(It, It1, rect):
 
         m_A = torch.stack((sp_y_sobel.view(-1), sp_x_sobel.view(-1))).transpose(1, 0)
 
-        m_WIt = F.grid_sample(img_tensor, grid=grid_xy0).permute(0, 1, 3, 2)
         m_b = (m_WIt - sample_img).contiguous().view(-1)
 
         #delta_pp = torch.inverse(torch.Tensor(A).permute(1, 0) @ torch.Tensor(A)) @ (torch.Tensor(A).permute(1, 0) @ m_b)

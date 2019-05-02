@@ -138,8 +138,6 @@ def pipeline(opt, model, cuda):
                     # Save image and detections
                     imgs.extend(img_paths)
                     img_detections.extend(detections)
-                    if batch_i == 10:
-                        break
                 f.write("Total time: " + str(total_time) + '\n')
                 f.write("Average time: " + str(total_time / len(dataloader)))
 
