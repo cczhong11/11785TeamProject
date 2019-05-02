@@ -36,7 +36,6 @@ def init_parser():
 
 def init_model(opt):
     cuda = torch.cuda.is_available() and opt.use_cuda
-
     os.makedirs('output', exist_ok=True)
 
     # Set up model
@@ -69,8 +68,12 @@ def create_dir(dir_output):
 
 
 def pipeline(opt, model, cuda):
+    device = torch.device('cuda' if cuda else 'cpu')
     root_dir = opt.root_dir
+    print(root_dir)
     for dirName, subdirList, fileList in os.walk(root_dir):
+        # print('!!!!!!!!!')
+        # print(dirName, subdirList, fileList)
         if not subdirList:
             dir_output = "output/" + '/'.join(dirName.split("/")[-2:])
             create_dir(dir_output)
@@ -110,15 +113,18 @@ def pipeline(opt, model, cuda):
                             detections = model(input_imgs)
                             detections = non_max_suppression(detections, 80, opt.conf_thres, opt.nms_thres)
                         detections = transform_to_origin(detections, h, w, opt.img_size)
-                        print(len(detections), detections[0].shape)
+                        # print(len(detections), detections[0].shape)
                     else:
                         # not key frame, use LK instead.
                         detections = []
                         for detection in last_detections:
                             if len(detection.shape) == 1:
                                 detection = torch.unsqueeze(detection, 0)
-                            # p = lucaskanade.LucasKanade(last_image, image, detection)
-                            p = LucasKanadeGPU.LucasKanadeGPU(last_image, image, detection)
+                            if device == 'cpu':
+                                p = lucaskanade.LucasKanade(last_image, image, detection)
+                                # p = LucasKanadeGPU.LucasKanadeGPU(last_image, image, detection, device)
+                            else:
+                                p = LucasKanadeGPU.LucasKanadeGPU(last_image, image, detection, device)
                             for i, d in enumerate(detection):
                                 d[0] += p[i, 0]
                                 d[1] += p[i, 1]
@@ -140,6 +146,7 @@ def pipeline(opt, model, cuda):
                     # Save image and detections
                     imgs.extend(img_paths)
                     img_detections.extend(detections)
+
                 f.write("Total time: " + str(total_time) + '\n')
                 f.write("Average time: " + str(total_time / len(dataloader)))
 
@@ -191,7 +198,7 @@ def pipeline(opt, model, cuda):
 
 
 if __name__ == '__main__':
-    print("!")
+    # print("!")
     opt, model, cuda = init()
     pipeline(opt, model, cuda)
-    print("!!")
+    # print("!!")

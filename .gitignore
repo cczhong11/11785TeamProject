@@ -105,3 +105,4 @@ venv.bak/
 .vscode
 .idea
 data/
+ILSVRC2015_train_00013008/
