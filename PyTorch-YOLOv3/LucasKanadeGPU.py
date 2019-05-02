@@ -3,11 +3,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch
 import numpy as np
-from scipy.interpolate import RectBivariateSpline
-from torchvision import transforms
-from torch.autograd import Variable
-import matplotlib.pyplot as plt
-import matplotlib.patches as patches
 
 
 def sobel(x, direction='x'):
@@ -33,7 +28,7 @@ def get_grid(x0, x1, y0, y1, X, Y, imh, imw):
     return grid_xy
 
 
-def LucasKanadeGPU(It, It1, rect):
+def calculate(It, It1, rect):
     threshold = 0.001
     iter = 3
     p = torch.zeros(2)
@@ -72,4 +67,16 @@ def LucasKanadeGPU(It, It1, rect):
         p += delta_p
         if torch.sum(delta_p ** 2) < threshold:
             break
+    return p
+
+
+def LucasKanadeGPU(It, It1, rect):
+    p = []
+    if len(rect.shape) == 1:
+        rect = rect.reshape(1, rect.shape[0])
+    for rec in rect:
+        rec = rec[:4]
+        p.append(calculate(It, It1, rec))
+
+    p = np.stack(p)
     return p
