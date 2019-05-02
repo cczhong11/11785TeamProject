@@ -19,13 +19,15 @@ def LucasKanade(It, It1, rect):
 
     # Put your implementation here
     time_start = time.time()
+
+    It = It.squeeze(0)
+    It1 = It1.squeeze(0)
+    It = It[..., :3] @ torch.Tensor([0.299, 0.587, 0.114])
+    It1 = It1[..., :3] @ torch.Tensor([0.299, 0.587, 0.114])
+
     It = It.cpu().numpy()
     It1 = It1.cpu().numpy()
     rect = rect.cpu().numpy()
-    It = np.squeeze(It, axis=0)
-    It1 = np.squeeze(It1, axis=0)
-    It = np.dot(It[...,:3], [0.299, 0.587, 0.114])
-    It1 = np.dot(It1[...,:3], [0.299, 0.587, 0.114])
     time_cpu = time.time()
     print("time cpu: {}".format(time_cpu - time_start))
 
@@ -45,22 +47,20 @@ def LucasKanade(It, It1, rect):
     print("time calculate: {}".format(time.time() - time_spline))
     return p
 
-        
-
 
 def calculate(spline_it, spline_it1, rect, p0=np.zeros(2)):
     threshold = 0.001
-    iter = 10
+    iter = 3
     p = p0
     rectX = rect[3] - rect[1]
     rectY = rect[2] - rect[0]
+    WIt = spline_it(np.linspace(rect[1], rect[3], rectX), np.linspace(rect[0], rect[2], rectY), grid=True)
     iter_num = 0
     for i in range(iter):
         iter_num += 1
         A = np.stack((spline_it1(np.linspace(rect[1] + p[1], rect[3] + p[1], rectX), np.linspace(rect[0] + p[0], rect[2] + p[0], rectY), dx=0, dy=1, grid=True).flatten(),
                       spline_it1(np.linspace(rect[1] + p[1], rect[3] + p[1], rectX), np.linspace(rect[0] + p[0], rect[2] + p[0], rectY), dx=1, dy=0, grid=True).flatten()
                       )).transpose()
-        WIt = spline_it(np.linspace(rect[1], rect[3], rectX), np.linspace(rect[0], rect[2], rectY), grid=True)
         WIt1 = spline_it1(np.linspace(rect[1] + p[1], rect[3] + p[1], rectX), np.linspace(rect[0] + p[0], rect[2] + p[0], rectY), grid=True)
         b = (WIt - WIt1).flatten()
 
