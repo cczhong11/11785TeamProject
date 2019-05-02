@@ -6,6 +6,7 @@ import datetime
 from matplotlib.ticker import NullLocator
 from torch.utils.data import DataLoader
 
+import LucasKanadeGPU
 import lucaskanade
 from models import *
 from utils.datasets import *
@@ -116,7 +117,8 @@ def pipeline(opt, model, cuda):
                         for detection in last_detections:
                             if len(detection.shape) == 1:
                                 detection = torch.unsqueeze(detection, 0)
-                            p = lucaskanade.LucasKanade(last_image, image, detection)
+                            # p = lucaskanade.LucasKanade(last_image, image, detection)
+                            p = LucasKanadeGPU.LucasKanadeGPU(last_image, image, detection)
                             for i, d in enumerate(detection):
                                 d[0] += p[i, 0]
                                 d[1] += p[i, 1]
