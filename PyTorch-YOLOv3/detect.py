@@ -112,7 +112,7 @@ def plot_image(img_i, path, opt, detections, colors, dir_output, classes):
                 box_w = ((x2 - x1) / unpad_w) * img.shape[1]
                 y1 = ((y1 - pad_y // 2) / unpad_h) * img.shape[0]
                 x1 = ((x1 - pad_x // 2) / unpad_w) * img.shape[1]
-            elif opt.mode == "cropped" or opt.mode == "psnr":
+            elif opt.mode == "cropped" or opt.mode == "psnr" or opt.mode == "net":
                 box_h = y2 - y1
                 box_w = x2 - x1
             rs.append([classes[int(cls_pred)], x1 + box_w, x1, y1 + box_h, y1])
@@ -152,14 +152,15 @@ def psnr_key_frame_detect(img, crop_info, block, stride, threshold):
     img = img.squeeze(0)
     img = img.squeeze(0)
     img = img.squeeze(2)
-
+    
     idx = img < threshold
 
     img[idx] = 1
     img[~idx] = 0
     size = img.shape[0] * img.shape[1]
     rr = torch.sum(img) / size
-    if rr > 0.3:
+
+    if rr > 0.2:
         print("it is key {}".format(rr))
         return True
     return False
@@ -167,7 +168,8 @@ def psnr_key_frame_detect(img, crop_info, block, stride, threshold):
 
 def net_key_frame_detect(f1, f2):
     diff = cos(f1, f2)
-    if diff < 0.9:
+    
+    if diff < 0.92:
         print("it is key {}".format(diff))
         return True
     return False
@@ -316,18 +318,30 @@ def inference_img_cropped_key(f, dataloader, model, min_model, opt, featuremmode
         # Configure input
 
         if last_img is not None:
+            iskey = True
             if opt.mode == "psnr":
-                iskey = psnr_key_frame_detect(torch.abs(input_imgs.float() - last_img.float()), crop_info, 20, 5, 10)
-                last_img = input_imgs
-            elif opt.mode == "mobilenet":
+                iskey = psnr_key_frame_detect(torch.abs(input_imgs.float() - last_img.float()), crop_info, 50, 20, 20)
+                
+                last_img = copy.deepcopy(input_imgs)
+            elif opt.mode == "net":
                 # should be 32 times
-                input_imgs = pad_image(input_imgs[0], 320)
-                cur_feature = featuremmodel(input_imgs)
+                input_img = pad_image(input_imgs[0], 320)
+                cur_feature = featuremmodel(input_img.unsqueeze(0).to(device))
 
                 iskey = net_key_frame_detect(cur_feature, last_img)
+                
                 last_img = cur_feature
-
+            if iskey:
+                with open("{}keyframes.txt".format(opt.mode),'a') as f:
+                    f.write(img_paths+"\n")
         if batch_i == 0 or iskey or last_detection[0] is None:
+            if last_img is None:
+                if opt.mode=="psnr":
+                    last_img = copy.deepcopy(input_imgs)
+                if opt.mode=="net":
+                    input_img = pad_image(input_imgs[0], 320)
+                    cur_feature = featuremmodel(input_img.unsqueeze(0).to(device))
+                    last_img = cur_feature
             h = input_imgs.shape[1]
             w = input_imgs.shape[2]
             input_imgs = pad_image(input_imgs[0], opt.img_size)

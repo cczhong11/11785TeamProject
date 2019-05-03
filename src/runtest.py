@@ -1,5 +1,5 @@
 import os
-
+import datetime
 not_moving_videos = "not_moving_filter.txt"
 moving_videos = "moving_filter.txt"
 error = "error.txt"
@@ -44,7 +44,7 @@ def run_code(mode,threshold,filename):
             os.chdir("../PyTorch-YOLOv3")
             try:
                 if mode=="origin":
-                    os.system("python3 detect.py --root_dir=../../{0} --mode={1} --img_size=608 --output_dir=output_{1}/".format(l,mode))
+                    os.system("python3 detect.py --root_dir=../../{0} --mode={1} --img_size=1024 --output_dir=output_{1}/".format(l,mode))
                 else:
                     os.system("python3 detect.py --root_dir=../../{0} --mode={1} --output_dir=output_{1}/".format(l,mode))
                 os.chdir("../src")
@@ -89,13 +89,13 @@ def read_infere_time(mode,filename):
                 total_time = (line.split()[2])
             #if line[0] == "A":
             #    self.averge_time = line.split()[2]
-    return total_time
+    return datetime.datetime.strptime(total_time,"%H:%M:%S.%f").timestamp()-datetime.datetime(1900,1,1,0,0,0).timestamp()
 def read_acc_time(mode,filename):
     acc = 0.0
     with open("../PyTorch-YOLOv3/output_{}/output/{}/acc.txt".format(mode,filename)) as f:
         acc = float(f.readline())
     return acc
-def compare_acc_time(mode1,mode2,filename,threshold):
+def compare_acc_time(mode1,mode2,filename):
     total_time1 = 0.0
     total_time2 = 0.0
     acc1 = 0
@@ -103,17 +103,42 @@ def compare_acc_time(mode1,mode2,filename,threshold):
     
     total_time1 = read_infere_time(mode1,filename[21:])
     total_time2 = read_infere_time(mode2,filename[21:])
+    
     acc1 = read_acc_time(mode1,filename[21:])
     acc2 = read_acc_time(mode2,filename[21:])
-    print(" total time 1 is {}".format(total_time1))
-    print(" total time 2 is {}".format(total_time2))
-    print(" acc 1 is {}".format(acc1))
-    print(" acc 2 is {}".format(acc2))
-        
+    rs = 0.0
+    if acc2!=0:
+        rs = float(acc1)/float(acc2)
     
+    return total_time1/total_time2,rs
+        
+def compare_mode(mode1,mode2,filename, threshold):
+    c = 0
+    ttsp = 0.0
+    taccsp = 0.0
+
+    with open(filename) as f:
+        for l in f:
+            if c>threshold:
+                break
+            l = l.strip()
+            tsp,accsp = compare_acc_time(mode1,mode2,l)
+            ttsp+=tsp
+            taccsp+=accsp
+            c+=1
+    print("mode 1:{} mode2:{} time speed up:{} acc improve: {}".format(mode1,mode2,ttsp/c,taccsp/c))
+def run_baseline(mode):
+    run_code(mode,30,not_moving_videos)
+    run_code(mode,10,moving_videos)
 #find_lower_frame()
-run_code("origin",30,not_moving_videos)
-run_code("cropped",30,not_moving_videos)
-run_code("psnr",30,not_moving_videos)
-run_code("net",30,not_moving_videos)
+#run_code("origin",30,not_moving_videos)
+#run_code("cropped",30,not_moving_videos)
+#run_code("psnr",30,not_moving_videos)
+#run_code("net",30,not_moving_videos)
 #compare_acc_time("origin","cropped","image/Data/VID/train/ILSVRC2015_VID_train_0000/ILSVRC2015_train_00051019",0)
+#compare_mode("origin","cropped",not_moving_videos,30)
+#compare_mode("origin","psnr",not_moving_videos,30)
+#compare_mode("origin","net",not_moving_videos,30)
+run_baseline("cropped")
+run_baseline("psnr")
+run_baseline("net")
