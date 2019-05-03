@@ -11,7 +11,8 @@ from models import *
 from utils.datasets import *
 from utils.iou import *
 from utils.utils import *
-
+import LucasKanadeGPU
+import lucaskanade
 cuda = torch.cuda.is_available()
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 SIM_PATH = "utils/sim_result_aligned.txt"
@@ -225,6 +226,74 @@ def inference_img_cropped(f, dataloader, model, min_model, opt):
     f.write("Average time: " + str(total_time / len(dataloader)))
     return imgs, img_detections
 
+def inference_lk(f, dataloader, model, opt):
+    Tensor = torch.cuda.FloatTensor if cuda else torch.FloatTensor
+
+    imgs = []  # Stores image paths
+    img_detections = []  # Stores detections for each image index
+
+    print('\nPerforming object detection:')
+    prev_time = time.time()
+    total_time = datetime.timedelta(seconds=0)
+
+    
+    last_image = None
+    last_detections = None
+    detections = None
+    image = None
+    for batch_i, (img_paths, input_imgs) in enumerate(dataloader):
+        # Configure input
+        h = input_imgs.shape[1]
+        w = input_imgs.shape[2]
+        image = copy.deepcopy(input_imgs)
+        input_imgs = pad_image(input_imgs[0], opt.img_size) # batch_size == 1
+        input_imgs = torch.unsqueeze(input_imgs, 0)
+        if batch_i % 10 == 0 or len(last_detections[0]) == 0:
+            # key frame freq = 10
+            input_imgs = Variable(input_imgs.type(Tensor))
+
+            # Get detections
+            with torch.no_grad():
+                detections = model(input_imgs)
+                detections = non_max_suppression(detections, 80, opt.conf_thres, opt.nms_thres)
+            detections = transform_to_origin(detections, h, w, opt.img_size)
+            # print(len(detections), detections[0].shape)
+        else:
+            # not key frame, use LK instead.
+            detections = []
+            for detection in last_detections:
+                if len(detection.shape) == 1:
+                    detection = torch.unsqueeze(detection, 0)
+                if device == 'cpu':
+                    p = lucaskanade.LucasKanade(last_image, image, detection)
+                    # p = LucasKanadeGPU.LucasKanadeGPU(last_image, image, detection, device)
+                else:
+                    p = LucasKanadeGPU.LucasKanadeGPU(last_image, image, detection, device)
+                for i, d in enumerate(detection):
+                    d[0] += p[i, 0]
+                    d[1] += p[i, 1]
+                    d[2] += p[i, 0]
+                    d[1] += p[i, 1]
+                detections.append(torch.unsqueeze(d, 0))
+            #print(detections[0].shape)
+        last_detections = detections
+        last_image = image
+
+        # Log progress
+        current_time = time.time()
+        inference_time = datetime.timedelt(seconds=current_time - prev_time)
+        total_time += inference_time
+        prev_time = current_time
+        out_string = 'Batch %d, Inference Time: %s' %(batch_i, inference_time)
+        print(out_string)
+        f.write(out_string + '\n')
+        # Save image and detections
+        imgs.extend(img_paths)
+        img_detections.extend(detections)
+
+    f.write("Total time: " + str(total_time) + '\n')
+    f.write("Average time: " + str(total_time / len(dataloader)))
+    return imgs,img_detections
 
 def inference_img_cropped_key(f, dataloader, model, min_model, opt, featuremmodel=None):
     imgs = []  # Stores image paths
@@ -351,7 +420,7 @@ def run_model(opt, model):
             if opt.mode == "origin":
                 dataloader = DataLoader(ImageFolder(dirName, img_size=opt.img_size),
                                         batch_size=opt.batch_size, shuffle=False, num_workers=opt.n_cpu)
-            elif opt.mode == "cropped" or opt.mode == "psnr" or opt.mode == "net":
+            elif opt.mode == "cropped" or opt.mode == "psnr" or opt.mode == "net" or opt.mode=="lk":
                 dataloader = DataLoader(croppedImageFolder(dirName, img_size=opt.img_size),
                                         batch_size=opt.batch_size, shuffle=False, num_workers=opt.n_cpu)
 
@@ -372,7 +441,8 @@ def run_model(opt, model):
                 elif opt.mode == "net":
                     imgs, img_detections = inference_img_cropped_key(f, dataloader, model, min_model, opt,
                                                                      featuremmodel)
-
+                elif opt.mode == "lk":
+                    imgs,img_detections = inference_lk(f,dataloader,model,opt)
             # Bounding-box colors
             cmap = plt.get_cmap('tab20b')
             colors = [cmap(i) for i in np.linspace(0, 1, 20)]
