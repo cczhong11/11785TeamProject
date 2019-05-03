@@ -29,12 +29,12 @@ def LucasKanade(It, It1, rect):
     It1 = It1.cpu().numpy()
     rect = rect.cpu().numpy()
     time_cpu = time.time()
-    print("time cpu: {}".format(time_cpu - time_start))
+    //print("time cpu: {}".format(time_cpu - time_start))
 
     spline_it = RectBivariateSpline(np.arange(It.shape[0]), np.arange(It.shape[1]), It)
     spline_it1 = RectBivariateSpline(np.arange(It1.shape[0]), np.arange(It1.shape[1]), It1)
     time_spline = time.time()
-    print("time spline: {}".format(time_spline - time_cpu))
+    //print("time spline: {}".format(time_spline - time_cpu))
 
     p = []
     if len(rect.shape) == 1:
@@ -44,7 +44,7 @@ def LucasKanade(It, It1, rect):
         p.append(calculate(spline_it, spline_it1, rec))
     
     p = np.stack(p)
-    print("time calculate: {}".format(time.time() - time_spline))
+    //print("time calculate: {}".format(time.time() - time_spline))
     return p
 
 
@@ -69,5 +69,5 @@ def calculate(spline_it, spline_it1, rect, p0=np.zeros(2)):
         p += delta_p
         if np.sum(delta_p ** 2) < threshold:
             break
-    print("iter_num: {}".format(iter_num))
+    //print("iter_num: {}".format(iter_num))
     return p

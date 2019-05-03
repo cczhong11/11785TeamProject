@@ -5,7 +5,7 @@ import datetime
 
 from matplotlib.ticker import NullLocator
 from torch.utils.data import DataLoader
-
+import copy
 from MobileNetV2 import MobileNetV2  # ref: https://github.com/tonylins/pytorch-mobilenet-v2
 from models import *
 from utils.datasets import *
@@ -41,7 +41,7 @@ def init_parser():
     parser.add_argument('--batch_size', type=int, default=1, help='size of the batches')
     parser.add_argument('--n_cpu', type=int, default=8, help='number of cpu threads to use during batch generation')
     parser.add_argument('--img_size', type=int, default=416, help='size of each image dimension')
-    parser.add_argument('--use_cuda', type=bool, default=True, help='whether to use cuda if available')
+    parser.add_argument('--use_cuda', type=int, default=1, help='whether to use cuda if available')
     parser.add_argument('--root_dir', type=str, default='../../videos', help='root of the video directory')
     parser.add_argument('--output_dir', type=str, default='', help='output of the video directory')
     parser.add_argument('--mode', type=str, default='origin', help='cropped or origin version')
@@ -231,11 +231,14 @@ def inference_lk(f, dataloader, model, opt):
 
     imgs = []  # Stores image paths
     img_detections = []  # Stores detections for each image index
-
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print('\nPerforming object detection:')
     prev_time = time.time()
     total_time = datetime.timedelta(seconds=0)
-
+    
+    if opt.use_cuda == 0:
+        device = torch.device('cpu')
+        
     
     last_image = None
     last_detections = None
@@ -245,10 +248,11 @@ def inference_lk(f, dataloader, model, opt):
         # Configure input
         h = input_imgs.shape[1]
         w = input_imgs.shape[2]
-        image = copy.deepcopy(input_imgs)
-        input_imgs = pad_image(input_imgs[0], opt.img_size) # batch_size == 1
-        input_imgs = torch.unsqueeze(input_imgs, 0)
+        image = copy.deepcopy(input_imgs).to(device)
+        
         if batch_i % 10 == 0 or len(last_detections[0]) == 0:
+            input_imgs = pad_image(input_imgs[0], opt.img_size) # batch_size == 1
+            input_imgs = torch.unsqueeze(input_imgs, 0)
             # key frame freq = 10
             input_imgs = Variable(input_imgs.type(Tensor))
 
@@ -264,9 +268,9 @@ def inference_lk(f, dataloader, model, opt):
             for detection in last_detections:
                 if len(detection.shape) == 1:
                     detection = torch.unsqueeze(detection, 0)
-                if device == 'cpu':
+                if opt.use_cuda==0:
+                    print("hhere")
                     p = lucaskanade.LucasKanade(last_image, image, detection)
-                    # p = LucasKanadeGPU.LucasKanadeGPU(last_image, image, detection, device)
                 else:
                     p = LucasKanadeGPU.LucasKanadeGPU(last_image, image, detection, device)
                 for i, d in enumerate(detection):
@@ -281,7 +285,7 @@ def inference_lk(f, dataloader, model, opt):
 
         # Log progress
         current_time = time.time()
-        inference_time = datetime.timedelt(seconds=current_time - prev_time)
+        inference_time = datetime.timedelta(seconds=current_time - prev_time)
         total_time += inference_time
         prev_time = current_time
         out_string = 'Batch %d, Inference Time: %s' %(batch_i, inference_time)

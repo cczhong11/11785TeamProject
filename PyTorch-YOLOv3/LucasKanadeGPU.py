@@ -31,7 +31,7 @@ def get_grid(x0, x1, y0, y1, X, Y, imh, imw, device):
 def calculate(It, It1, rect, device):
     threshold = 0.001
     iter = 3
-    p = torch.zeros(2)
+    p = torch.zeros(2).to(device)
     rectX = int(rect[3] - rect[1])
     rectY = int(rect[2] - rect[0])
     # rect = torch.Tensor(rect)
@@ -67,6 +67,8 @@ def calculate(It, It1, rect, device):
         p += delta_p
         if torch.sum(delta_p ** 2) < threshold:
             break
+    p = p.cpu().numpy()
+    
     return p
 
 
@@ -77,6 +79,6 @@ def LucasKanadeGPU(It, It1, rect, device):
     for rec in rect:
         rec = rec[:4]
         p.append(calculate(It, It1, rec, device))
-
+    
     p = np.stack(p)
     return p
