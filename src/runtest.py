@@ -45,6 +45,10 @@ def run_code(mode,threshold,filename):
             try:
                 if mode=="origin":
                     os.system("python3 detect.py --root_dir=../../{0} --mode={1} --img_size=1024 --output_dir=output_{1}/".format(l,mode))
+                elif mode=="lk":
+                    os.system("python3 detect.py --root_dir=../../{0} --mode={1} --img_size=1024 --output_dir=output_{1}/ --use_cuda=0".format(l,mode))
+                elif mode=="origin_cpu":
+                    os.system("python3 detect.py --root_dir=../../{0} --mode=origin --img_size=608 --output_dir=output_{1}/ --use_cuda=0".format(l,mode))
                 else:
                     os.system("python3 detect.py --root_dir=../../{0} --mode={1} --output_dir=output_{1}/".format(l,mode))
                 os.chdir("../src")
@@ -130,15 +134,18 @@ def compare_mode(mode1,mode2,filename, threshold):
 def run_baseline(mode):
     run_code(mode,30,not_moving_videos)
     run_code(mode,10,moving_videos)
+def run_baseline_cpu(mode):
+    run_code(mode,10,not_moving_videos)
+    #run_code(mode,10,moving_videos)
 #find_lower_frame()
-#run_code("origin",30,not_moving_videos)
-#run_code("cropped",30,not_moving_videos)
-#run_code("psnr",30,not_moving_videos)
-#run_code("net",30,not_moving_videos)
+
 #compare_acc_time("origin","cropped","image/Data/VID/train/ILSVRC2015_VID_train_0000/ILSVRC2015_train_00051019",0)
 #compare_mode("origin","cropped",not_moving_videos,30)
 #compare_mode("origin","psnr",not_moving_videos,30)
 #compare_mode("origin","net",not_moving_videos,30)
-run_baseline("cropped")
-run_baseline("psnr")
-run_baseline("net")
+#run_baseline("cropped")
+#run_baseline("psnr")
+#run_baseline("net")
+
+run_baseline_cpu("origin_cpu")
+run_baseline_cpu("lk")

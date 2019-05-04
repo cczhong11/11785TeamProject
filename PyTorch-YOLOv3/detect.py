@@ -55,7 +55,8 @@ def init_model():
     opt = init_parser()
     model = Darknet(opt.config_path, img_size=opt.img_size)
     model.load_weights(opt.weights_path)
-
+    global cuda
+    cuda = cuda and opt.use_cuda==1
     if cuda:
         model.cuda()
 
@@ -70,7 +71,7 @@ def init_model():
         rs.append(min_model)
         if opt.mode == "net":
             mnv2 = MobileNetV2(n_class=1000)
-            state_dict = torch.load('../../mobilenet_v2.pth.tar',map_location='cpu')  # add map_location='cpu' if no gpu
+            state_dict = torch.load('../../mobilenet_v2.pth.tar')  # add map_location='cpu' if no gpu
             mnv2.load_state_dict(state_dict)
             mnv2.classifier = Identity()
             if cuda:
@@ -112,7 +113,7 @@ def plot_image(img_i, path, opt, detections, colors, dir_output, classes):
                 box_w = ((x2 - x1) / unpad_w) * img.shape[1]
                 y1 = ((y1 - pad_y // 2) / unpad_h) * img.shape[0]
                 x1 = ((x1 - pad_x // 2) / unpad_w) * img.shape[1]
-            elif opt.mode == "cropped" or opt.mode == "psnr" or opt.mode == "net":
+            elif opt.mode == "cropped" or opt.mode == "psnr" or opt.mode == "net" or opt.mode=="lk":
                 box_h = y2 - y1
                 box_w = x2 - x1
             rs.append([classes[int(cls_pred)], x1 + box_w, x1, y1 + box_h, y1])
@@ -159,7 +160,7 @@ def psnr_key_frame_detect(img, crop_info, block, stride, threshold):
     img[~idx] = 0
     size = img.shape[0] * img.shape[1]
     rr = torch.sum(img) / size
-
+    
     if rr > 0.2:
         print("it is key {}".format(rr))
         return True
@@ -169,7 +170,7 @@ def psnr_key_frame_detect(img, crop_info, block, stride, threshold):
 def net_key_frame_detect(f1, f2):
     diff = cos(f1, f2)
     
-    if diff < 0.92:
+    if diff < 0.95:
         print("it is key {}".format(diff))
         return True
     return False
@@ -252,7 +253,8 @@ def inference_lk(f, dataloader, model, opt):
         w = input_imgs.shape[2]
         image = copy.deepcopy(input_imgs).to(device)
         
-        if batch_i % 10 == 0 or len(last_detections[0]) == 0:
+
+        if batch_i % 10 == 0 or last_detections[0] is None:
             input_imgs = pad_image(input_imgs[0], opt.img_size) # batch_size == 1
             input_imgs = torch.unsqueeze(input_imgs, 0)
             # key frame freq = 10
@@ -271,7 +273,6 @@ def inference_lk(f, dataloader, model, opt):
                 if len(detection.shape) == 1:
                     detection = torch.unsqueeze(detection, 0)
                 if opt.use_cuda==0:
-                    print("hhere")
                     p = lucaskanade.LucasKanade(last_image, image, detection)
                 else:
                     p = LucasKanadeGPU.LucasKanadeGPU(last_image, image, detection, device)
@@ -279,7 +280,7 @@ def inference_lk(f, dataloader, model, opt):
                     d[0] += p[i, 0]
                     d[1] += p[i, 1]
                     d[2] += p[i, 0]
-                    d[1] += p[i, 1]
+                    d[3] += p[i, 1]
                 detections.append(torch.unsqueeze(d, 0))
             #print(detections[0].shape)
         last_detections = detections
@@ -296,7 +297,7 @@ def inference_lk(f, dataloader, model, opt):
         # Save image and detections
         imgs.extend(img_paths)
         img_detections.extend(detections)
-
+    
     f.write("Total time: " + str(total_time) + '\n')
     f.write("Average time: " + str(total_time / len(dataloader)))
     return imgs,img_detections
@@ -332,8 +333,9 @@ def inference_img_cropped_key(f, dataloader, model, min_model, opt, featuremmode
                 
                 last_img = cur_feature
             if iskey:
-                with open("{}keyframes.txt".format(opt.mode),'a') as f:
-                    f.write(img_paths+"\n")
+                with open("{}keyframes.txt".format(opt.mode),'a') as fff:
+                    print(img_paths)
+                    fff.write(img_paths[0]+"\n")
         if batch_i == 0 or iskey or last_detection[0] is None:
             if last_img is None:
                 if opt.mode=="psnr":
@@ -374,6 +376,7 @@ def inference_img_cropped_key(f, dataloader, model, min_model, opt, featuremmode
         # Save image and detections
         imgs.extend(img_paths)
         img_detections.extend(detections)
+    
     f.write("Total time: " + str(total_time) + '\n')
     f.write("Average time: " + str(total_time / len(dataloader)))
     return imgs, img_detections
@@ -384,6 +387,7 @@ def inference_img(f, dataloader, model, opt):
     total_time = datetime.timedelta(seconds=0)
     imgs = []  # Stores image paths
     img_detections = []  # Stores detections for each image index
+    
     Tensor = torch.cuda.FloatTensor if cuda else torch.FloatTensor
     for batch_i, (img_paths, input_imgs) in enumerate(dataloader):
         # Configure input
@@ -405,8 +409,8 @@ def inference_img(f, dataloader, model, opt):
         # Save image and detections
         imgs.extend(img_paths)
         img_detections.extend(detections)
-        f.write("Total time: " + str(total_time) + '\n')
-        f.write("Average time: " + str(total_time / len(dataloader)))
+    f.write("Total time: " + str(total_time) + '\n')
+    f.write("Average time: " + str(total_time / len(dataloader)))
     return imgs, img_detections
 
 
