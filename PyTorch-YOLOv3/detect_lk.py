@@ -129,7 +129,7 @@ def pipeline(opt, model, cuda):
                                 d[0] += p[i, 0]
                                 d[1] += p[i, 1]
                                 d[2] += p[i, 0]
-                                d[1] += p[i, 1]
+                                d[3] += p[i, 1]
                             detections.append(torch.unsqueeze(d, 0))
                     print(detections[0].shape)
                     last_detections = detections
